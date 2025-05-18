@@ -25,20 +25,26 @@ class NewItemNotifier extends StateNotifier<List<Place>> {
     return db;
   }
 
-  void loadPlaces() async {
+  Future<void> loadPlaces() async {
     final db = await getDatabse();
     final data = await db.query('user_places');
-    data.map(
-      (row) => Place(
-        title: row['title'] as String,
-        image: File(row['image'] as String),
-        location: PlaceLocation(
-          address: row['address'] as String,
-          lat: row['lat'] as double,
-          lng: row['lng'] as double,
-        ),
-      ),
-    );
+    final places =
+        data
+            .map(
+              (row) => Place(
+                id: row['id'] as String,
+                title: row['title'] as String,
+                image: File(row['image'] as String),
+                location: PlaceLocation(
+                  address: row['address'] as String,
+                  lat: row['lat'] as double,
+                  lng: row['lng'] as double,
+                ),
+              ),
+            )
+            .toList();
+
+    state = places;
   }
 
   void addFavouritePalce(Place place) async {
