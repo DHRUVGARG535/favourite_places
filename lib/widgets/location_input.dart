@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:favourite_places/models/place.dart';
+import 'package:favourite_places/screens/map.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:http/http.dart' as http;
 
@@ -17,6 +19,24 @@ class LocationInput extends StatefulWidget {
 }
 
 class _LocationInputState extends State<LocationInput> {
+  
+  _saveLocation(double lat, double lng) async {
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=AIzaSyA6YeZ0Br3kX7L3ZgZM4QRjGFmtSamV77w',
+    );
+    final respose = await http.get(url);
+    final resData = json.decode(respose.body);
+
+    final address = resData['results'][0]['formatted_address'];
+
+    setState(() {
+      _pickedLocation = PlaceLocation(address: address, lat: lat, lng: lng);
+      _isGettingLocation = false;
+    });
+
+    widget.onSelectLocation(_pickedLocation!);
+  }
+
   PlaceLocation? _pickedLocation;
   var _isGettingLocation = false;
 
@@ -65,20 +85,21 @@ class _LocationInputState extends State<LocationInput> {
       return;
     }
 
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=AIzaSyA6YeZ0Br3kX7L3ZgZM4QRjGFmtSamV77w'
+    _saveLocation(lat, lng);
+  }
+
+  void _selectOnMap() async {
+    final location = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(builder: (ctx) => MapScreen()),
     );
-    final respose = await http.get(url);
-    final resData = json.decode(respose.body);
 
-    final address = resData['results'][0]['formatted_address'];
+    if(location == null){
+      return;
 
-    setState(() {
-      _pickedLocation = PlaceLocation(address: address, lat: lat, lng: lng);
-      _isGettingLocation = false;
-    });
+    }
 
-    widget.onSelectLocation(_pickedLocation!);
+    _saveLocation(location.latitude, location.longitude);
   }
 
   @override
@@ -126,7 +147,7 @@ class _LocationInputState extends State<LocationInput> {
               icon: Icon(Icons.location_on),
             ),
             TextButton.icon(
-              onPressed: () {},
+              onPressed:_selectOnMap,
               label: Text('Select On Map'),
               icon: Icon(Icons.map),
             ),
